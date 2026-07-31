@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { getGreeting } from '../utils/dateTime';
 
 import heroImg from '../assets/summary_hero_bear.png';
 import treasureBoxImg from '../assets/magical_treasure_box.png';
@@ -52,7 +53,7 @@ const Summary = () => {
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div style={{ zIndex: 10 }}>
-          <h2 style={{ fontSize: '16px', color: '#7A6B63', fontWeight: '600', marginBottom: '4px' }}>Good Evening,</h2>
+          <h2 style={{ fontSize: '16px', color: '#7A6B63', fontWeight: '600', marginBottom: '4px' }}>{getGreeting()}</h2>
           <h1 style={{ fontSize: '32px', color: '#D97979', fontFamily: 'DM Serif Display, serif', marginBottom: '8px' }}>Ayenett 🌸</h1>
           <p style={{ fontSize: '13px', color: '#9C8F87', maxWidth: '200px', lineHeight: '1.4' }}>
             Here's your summary of growth and beautiful moments. 🌿✨

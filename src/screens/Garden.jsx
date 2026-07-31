@@ -16,6 +16,7 @@ import imgSad from '../assets/final_sad.png';
 import imgStress from '../assets/final_stress.png';
 import imgReflection from '../assets/a.png';
 import { Home, Book, Map, Compass, User, Edit3, ChevronRight, Check, Smile, Sun, CloudRain, Zap, Heart, Star, Flame } from 'lucide-react';
+import { getGreeting } from '../utils/dateTime';
 
 const Garden = ({ onNavigate }) => {
   const [selectedMood, setSelectedMood] = useState(null);
@@ -150,7 +151,7 @@ const Garden = ({ onNavigate }) => {
         {/* Top Header */}
         <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
           <div>
-            <div style={{ fontSize: '15px', color: '#7A6B63', fontWeight: '600' }}>Good Morning,</div>
+            <div style={{ fontSize: '15px', color: '#7A6B63', fontWeight: '600' }}>{getGreeting()}</div>
             <div style={{ fontSize: '28px', color: '#D97979', fontFamily: 'DM Serif Display, serif', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {stats ? stats.user.name : 'Ayenett'}
             </div>

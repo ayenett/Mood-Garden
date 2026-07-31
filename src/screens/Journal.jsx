@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import imgNotebook from '../assets/a.png';
+import imgNotebook from '../assets/Designer (51).png';
 import imgHappy from '../assets/final_happy.png';
 import imgCalm from '../assets/final_calm.png';
 import imgLovely from '../assets/lovely_final_v3.png';
 import imgSad from '../assets/final_sad.png';
 import imgStress from '../assets/final_stress.png';
+import { getGreeting, getFormattedCurrentDate, getPast7DaysCarousel } from '../utils/dateTime';
 import { 
   Home, Book, Map, Compass, User, ChevronRight, ChevronLeft, 
   X, Calendar, Heart, Image as ImageIcon, Mic, Sun, Cloud, Sparkles, Plus, Edit3, 
@@ -67,16 +68,6 @@ const INITIAL_ENTRIES = {
   }
 };
 
-const CarouselDates = [
-  { dateKey: '2026-07-24', label: 'Jul 24', day: 'Fri' },
-  { dateKey: '2026-07-25', label: 'Jul 25', day: 'Sat' },
-  { dateKey: '2026-07-26', label: 'Jul 26', day: 'Sun' },
-  { dateKey: '2026-07-27', label: 'Jul 27', day: 'Mon' },
-  { dateKey: '2026-07-28', label: 'Jul 28', day: 'Tue' },
-  { dateKey: '2026-07-29', label: 'Jul 29', day: 'Wed' },
-  { dateKey: '2026-07-30', label: 'Jul 30', day: 'Thu' },
-];
-
 const PRESET_PHOTOS = [
   { label: 'Blossom Garden', url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80' },
   { label: 'Morning Tea', url: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80' },
@@ -85,13 +76,32 @@ const PRESET_PHOTOS = [
 ];
 
 const Journal = ({ onNavigate }) => {
+  const currentDateInfo = getFormattedCurrentDate();
+  const CarouselDates = getPast7DaysCarousel();
+
   // Entries State
-  const [entries, setEntries] = useState(INITIAL_ENTRIES);
-  const [selectedDateKey, setSelectedDateKey] = useState('2026-07-30');
+  const [entries, setEntries] = useState(() => ({
+    ...INITIAL_ENTRIES,
+    [currentDateInfo.dateKey]: INITIAL_ENTRIES[currentDateInfo.dateKey] || {
+      dateKey: currentDateInfo.dateKey,
+      dateStr: currentDateInfo.shortDate,
+      fullDate: currentDateInfo.fullDate,
+      dayName: currentDateInfo.dayName,
+      prompt: 'What made you smile today?',
+      content: 'Watched the morning sunlight filter through the leaves in my garden. Taking a deep breath and enjoying a warm cup of floral tea.',
+      mood: 'Lovely',
+      moodImg: imgLovely,
+      photoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+      gratitude: 'Morning sunlight & floral tea 🌸',
+      voiceNoteDuration: '0:12'
+    }
+  }));
+
+  const [selectedDateKey, setSelectedDateKey] = useState(currentDateInfo.dateKey);
   
   // Interactive Modals State
   const [activeModal, setActiveModal] = useState(null); // 'overview' | 'gratitude' | 'photo' | 'voicenote' | 'weather' | 'reminder' | 'writer'
-  const [modalSelectedKey, setModalSelectedKey] = useState('2026-07-30');
+  const [modalSelectedKey, setModalSelectedKey] = useState(currentDateInfo.dateKey);
 
   // Input States for Modals
   const [gratitudeInput, setGratitudeInput] = useState('');
@@ -231,7 +241,7 @@ const Journal = ({ onNavigate }) => {
       }}>
         <div>
           <div style={{ fontSize: '15px', color: '#7A6B63', fontWeight: '600' }}>
-            Good Evening,
+            {getGreeting()}
           </div>
           <div style={{ 
             fontSize: '28px', 
@@ -251,28 +261,10 @@ const Journal = ({ onNavigate }) => {
             color: '#8A7A71',
             fontWeight: '600'
           }}>
-            <span>July 30, 2026</span>
+            <span>{currentDateInfo.fullDate}</span>
             <span>•</span>
-            <span>Thursday</span>
+            <span>{currentDateInfo.dayName}</span>
           </div>
-        </div>
-
-        {/* Top Right Coins Pill */}
-        <div style={{ 
-          background: 'rgba(255, 255, 255, 0.9)', 
-          padding: '8px 16px', 
-          borderRadius: '30px', 
-          fontWeight: '800', 
-          color: '#5C4E46',
-          fontSize: '14px',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          zIndex: 5
-        }}>
-          🪙 580
         </div>
 
         {/* Notebook Illustration Top Right */}
@@ -282,12 +274,13 @@ const Journal = ({ onNavigate }) => {
           style={{
             position: 'absolute',
             right: '-10px',
-            top: '40px',
-            width: '120px',
-            opacity: 0.85,
+            top: '0px',
+            width: '130px',
+            height: 'auto',
+            objectFit: 'contain',
+            opacity: 0.95,
             pointerEvents: 'none',
-            WebkitMaskImage: 'radial-gradient(circle at 70% 50%, black 50%, transparent 95%)',
-            maskImage: 'radial-gradient(circle at 70% 50%, black 50%, transparent 95%)'
+            mixBlendMode: 'multiply'
           }}
         />
       </div>
@@ -309,7 +302,7 @@ const Journal = ({ onNavigate }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px' }}>🌸</span>
               <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>
-                {selectedDateKey === '2026-07-30' ? "Today’s Journal" : `${currentEntry ? currentEntry.dateStr : 'Journal Entry'}`}
+                {selectedDateKey === currentDateInfo.dateKey ? "Today’s Journal" : `${currentEntry ? currentEntry.dateStr : 'Journal Entry'}`}
               </h2>
             </div>
 
