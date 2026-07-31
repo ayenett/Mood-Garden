@@ -273,14 +273,16 @@ const Journal = ({ onNavigate }) => {
           alt="Notebook Illustration" 
           style={{
             position: 'absolute',
-            right: '-10px',
-            top: '0px',
-            width: '130px',
+            right: '-15px',
+            top: '-10px',
+            width: '170px',
             height: 'auto',
             objectFit: 'contain',
             opacity: 0.95,
             pointerEvents: 'none',
-            mixBlendMode: 'multiply'
+            mixBlendMode: 'multiply',
+            WebkitMaskImage: 'radial-gradient(ellipse at 55% 50%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 75%)',
+            maskImage: 'radial-gradient(ellipse at 55% 50%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 75%)'
           }}
         />
       </div>
