@@ -1,3 +1,6 @@
+import cameraImg from '../assets/camera_nobg.png';
+import voiceImg from '../assets/voice.png';
+import flowerImg from '../assets/flower_nobg.png';
 import React, { useState, useRef } from 'react';
 import imgNotebook from '../assets/Designer (51).png';
 import imgHappy from '../assets/final_happy.png';
@@ -24,7 +27,7 @@ const INITIAL_ENTRIES = {
     mood: 'Calm',
     moodImg: imgCalm,
     photoUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80',
-    gratitude: 'Warm tea by the window ☕',
+    gratitude: 'Warm tea by the window (~_~)',
     voiceNoteDuration: '0:18'
   },
   '2026-07-26': {
@@ -37,7 +40,7 @@ const INITIAL_ENTRIES = {
     mood: 'Lovely',
     moodImg: imgLovely,
     photoUrl: null,
-    gratitude: 'Good laughter with old friends 💕',
+    gratitude: 'Good laughter with old friends (♥_♥)',
     voiceNoteDuration: null
   },
   '2026-07-28': {
@@ -50,7 +53,7 @@ const INITIAL_ENTRIES = {
     mood: 'Happy',
     moodImg: imgHappy,
     photoUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=400&q=80',
-    gratitude: 'Completing my blossom painting 🎨',
+    gratitude: 'Completing my blossom painting (^∇^)',
     voiceNoteDuration: '0:25'
   },
   '2026-07-30': {
@@ -63,7 +66,7 @@ const INITIAL_ENTRIES = {
     mood: 'Lovely',
     moodImg: imgLovely,
     photoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
-    gratitude: 'Morning sunlight & floral tea 🌸',
+    gratitude: 'Morning sunlight & floral tea ',
     voiceNoteDuration: '0:12'
   }
 };
@@ -75,33 +78,65 @@ const PRESET_PHOTOS = [
   { label: 'Golden Sunset', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80' }
 ];
 
+const AFFIRMATIONS = [
+  "You are doing better than you think.",
+  "Every small step brings beauty to your garden.",
+  "Be gentle with your heart today.",
+  "You deserve rest, peace, and happiness."
+];
+
 const Journal = ({ onNavigate }) => {
   const currentDateInfo = getFormattedCurrentDate();
   const CarouselDates = getPast7DaysCarousel();
+  
+  // Saved Toast State
+  const [isSavedToast, setIsSavedToast] = useState(false);
 
-  // Entries State
-  const [entries, setEntries] = useState(() => ({
-    ...INITIAL_ENTRIES,
-    [currentDateInfo.dateKey]: INITIAL_ENTRIES[currentDateInfo.dateKey] || {
-      dateKey: currentDateInfo.dateKey,
-      dateStr: currentDateInfo.shortDate,
-      fullDate: currentDateInfo.fullDate,
-      dayName: currentDateInfo.dayName,
-      prompt: 'What made you smile today?',
-      content: 'Watched the morning sunlight filter through the leaves in my garden. Taking a deep breath and enjoying a warm cup of floral tea.',
-      mood: 'Lovely',
-      moodImg: imgLovely,
-      photoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
-      gratitude: 'Morning sunlight & floral tea 🌸',
-      voiceNoteDuration: '0:12'
+  // Entries State initialized safely from localStorage or fallback to INITIAL_ENTRIES
+  const [entries, setEntries] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mood_garden_journal_entries');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length > 0) {
+          const cleanEntries = {};
+          Object.keys(parsed).forEach(k => {
+            if (parsed[k] && typeof parsed[k] === 'object') {
+              cleanEntries[k] = parsed[k];
+            }
+          });
+          return {
+            ...INITIAL_ENTRIES,
+            ...cleanEntries
+          };
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load saved journal entries:", e);
     }
-  }));
+    return {
+      ...INITIAL_ENTRIES,
+      [currentDateInfo.dateKey]: INITIAL_ENTRIES[currentDateInfo.dateKey] || {
+        dateKey: currentDateInfo.dateKey,
+        dateStr: currentDateInfo.shortDate,
+        fullDate: currentDateInfo.fullDate,
+        dayName: currentDateInfo.dayName,
+        prompt: 'What made you smile today?',
+        content: 'Watched the morning sunlight filter through the leaves in my garden. Taking a deep breath and enjoying a warm cup of floral tea.',
+        mood: 'Lovely',
+        photoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+        gratitude: 'Morning sunlight & floral tea ',
+        voiceNoteDuration: '0:12'
+      }
+    };
+  });
 
   const [selectedDateKey, setSelectedDateKey] = useState(currentDateInfo.dateKey);
   
   // Interactive Modals State
-  const [activeModal, setActiveModal] = useState(null); // 'overview' | 'gratitude' | 'photo' | 'voicenote' | 'weather' | 'reminder' | 'writer'
+  const [activeModal, setActiveModal] = useState(null); // 'overview' | 'gratitude' | 'photo' | 'voicenote' | 'weather' | 'writer'
   const [modalSelectedKey, setModalSelectedKey] = useState(currentDateInfo.dateKey);
+  const [calendarDate, setCalendarDate] = useState(() => new Date(currentDateInfo.dateKey));
 
   // Input States for Modals
   const [gratitudeInput, setGratitudeInput] = useState('');
@@ -110,8 +145,16 @@ const Journal = ({ onNavigate }) => {
   const [writerContent, setWriterContent] = useState('');
   const [writerMood, setWriterMood] = useState('Lovely');
 
-  const [weatherState, setWeatherState] = useState({ icon: '🌤️', title: 'Weather Today', desc: 'Sunny with gentle breeze • 26°C' });
-  const [reminderState, setReminderState] = useState('You are doing better than you think.');
+  // Deterministic daily affirmation
+  const getDailyAffirmation = (dateKey) => {
+    let hash = 0;
+    const str = dateKey || 'default';
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return AFFIRMATIONS[Math.abs(hash) % AFFIRMATIONS.length];
+  };
+  const dailyAffirmation = getDailyAffirmation(selectedDateKey);
 
   // Voice Recording & Playback State
   const [isRecording, setIsRecording] = useState(false);
@@ -119,40 +162,43 @@ const Journal = ({ onNavigate }) => {
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   const timerRef = useRef(null);
   const fileInputRef = useRef(null);
+  
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioPlaybackRef = useRef(null);
 
-  // Play Cozy Sound Chime via Web Audio API
+  // Play Voice Note
   const playVoiceNote = () => {
     if (isPlayingVoice) return;
+    const currentUrl = entries[selectedDateKey]?.voiceNoteUrl || 'https://actions.google.com/sounds/v1/ambiences/outdoor_garden.ogg';
     setIsPlayingVoice(true);
-
+    
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 cozy chime
-      notes.forEach((freq, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.2);
-        gain.gain.setValueAtTime(0.25, ctx.currentTime + index * 0.2);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.2 + 0.7);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + index * 0.2);
-        osc.stop(ctx.currentTime + index * 0.2 + 0.7);
-      });
-    } catch (e) {
-      console.log("AudioContext play error:", e);
+      if (!audioPlaybackRef.current) {
+        audioPlaybackRef.current = new Audio(currentUrl);
+      } else {
+        audioPlaybackRef.current.src = currentUrl;
+      }
+      audioPlaybackRef.current.onended = () => setIsPlayingVoice(false);
+      audioPlaybackRef.current.onerror = () => setIsPlayingVoice(false);
+      
+      const playPromise = audioPlaybackRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("Audio playback issue:", err);
+          setTimeout(() => setIsPlayingVoice(false), 2500);
+        });
+      }
+    } catch (err) {
+      console.warn("Playback error:", err);
+      setTimeout(() => setIsPlayingVoice(false), 2500);
     }
-
-    setTimeout(() => {
-      setIsPlayingVoice(false);
-    }, 2000);
   };
 
-  const currentEntry = entries[selectedDateKey];
-  const modalEntry = entries[modalSelectedKey];
+  const currentEntry = entries[selectedDateKey] || null;
+  const modalEntry = entries[modalSelectedKey] || null;
 
-  // Helper to update current entry
+  // Helper to update current entry and persist to localStorage
   const updateCurrentEntry = (fields) => {
     setEntries(prev => {
       const existing = prev[selectedDateKey] || {
@@ -168,31 +214,105 @@ const Journal = ({ onNavigate }) => {
         voiceNoteDuration: null
       };
 
-      return {
+      const updated = {
         ...prev,
         [selectedDateKey]: {
           ...existing,
           ...fields
         }
       };
+
+      try {
+        localStorage.setItem('mood_garden_journal_entries', JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to save entries to localStorage:", e);
+      }
+
+      return updated;
     });
   };
 
+  // Explicit Save Journal Entry handler with animation feedback
+  const saveCurrentJournalEntry = () => {
+    try {
+      localStorage.setItem('mood_garden_journal_entries', JSON.stringify(entries));
+      setIsSavedToast(true);
+      setTimeout(() => setIsSavedToast(false), 2500);
+    } catch (e) {
+      console.error("Failed to save journal entry:", e);
+    }
+  };
+
   // Voice Note Recording Handlers
-  const startRecording = () => {
+  const startRecording = async () => {
     setIsRecording(true);
     setRecordingTime(0);
+    audioChunksRef.current = [];
+
+    // Start timer counter interval immediately
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setRecordingTime(t => t + 1);
     }, 1000);
+
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        recorder.onstop = () => {
+          if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            updateCurrentEntry({ voiceNoteUrl: audioUrl });
+          }
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        recorder.start();
+      }
+    } catch (err) {
+      console.warn('Microphone access not available in environment, using simulated voice recording mode:', err);
+    }
   };
 
   const stopRecording = () => {
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-    const secs = recordingTime || 12;
-    const durStr = `0:${secs < 10 ? '0' + secs : secs}`;
-    updateCurrentEntry({ voiceNoteDuration: durStr });
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const durationSecs = recordingTime > 0 ? recordingTime : 3;
+    const durStr = `0:${durationSecs < 10 ? '0' + durationSecs : durationSecs}`;
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+        updateCurrentEntry({ voiceNoteDuration: durStr });
+      } catch (e) {
+        console.warn("MediaRecorder stop error:", e);
+        updateCurrentEntry({ 
+          voiceNoteDuration: durStr, 
+          voiceNoteUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_garden.ogg' 
+        });
+      }
+    } else {
+      // Fallback voice note URL for simulated recording
+      updateCurrentEntry({ 
+        voiceNoteDuration: durStr, 
+        voiceNoteUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_garden.ogg' 
+      });
+    }
+
     setActiveModal(null);
   };
 
@@ -302,7 +422,7 @@ const Journal = ({ onNavigate }) => {
           {/* Card Header Title & Edit Button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🌸</span>
+              <span style={{ fontSize: '18px' }}><img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} /></span>
               <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>
                 {selectedDateKey === currentDateInfo.dateKey ? "Today’s Journal" : `${currentEntry ? currentEntry.dateStr : 'Journal Entry'}`}
               </h2>
@@ -367,64 +487,65 @@ const Journal = ({ onNavigate }) => {
                 {currentEntry.content}
               </div>
 
-              {/* Gratitude Chip inside Entry */}
-              {currentEntry.gratitude && (
-                <div style={{ 
-                  marginTop: '12px', 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '6px',
-                  background: '#FFF3E0',
-                  color: '#8D6E63',
-                  padding: '6px 14px',
-                  borderRadius: '16px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  border: '1px solid #FFE0B2'
-                }}>
-                  <span>🪴 Gratitude:</span>
-                  <span>{currentEntry.gratitude}</span>
+              {/* Voice Note Chip inside Entry (Interactive, Playable & Removable) */}
+              {currentEntry?.voiceNoteDuration && (
+                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={playVoiceNote}
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      background: isPlayingVoice ? '#E9D8FD' : '#F0E6FF',
+                      color: '#6B46C1',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      border: '1.5px solid #D6BCFA',
+                      cursor: 'pointer',
+                      boxShadow: isPlayingVoice ? '0 0 12px rgba(107, 70, 193, 0.4)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s ease',
+                      outline: 'none'
+                    }}
+                  >
+                    {isPlayingVoice ? (
+                      <>
+                        <span style={{ fontSize: '14px', animation: 'bounce 0.5s infinite alternate' }}>♫</span>
+                        <span>Playing Voice Note... ({currentEntry?.voiceNoteDuration})</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={14} fill="#6B46C1" />
+                        <span>Voice Note ({currentEntry?.voiceNoteDuration})</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => updateCurrentEntry({ voiceNoteDuration: null, voiceNoteUrl: null })}
+                    style={{ 
+                      background: '#FFF0F2', 
+                      border: '1px solid #FFD8E3', 
+                      color: '#D97979', 
+                      borderRadius: '16px',
+                      padding: '6px 12px',
+                      fontSize: '11px', 
+                      fontWeight: '700', 
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Trash2 size={12} /> Remove voice
+                  </button>
                 </div>
               )}
 
-              {/* Voice Note Chip inside Entry (Interactive & Playable) */}
-              {currentEntry.voiceNoteDuration && (
-                <button 
-                  onClick={playVoiceNote}
-                  style={{ 
-                    marginTop: '10px', 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    background: isPlayingVoice ? '#E9D8FD' : '#F0E6FF',
-                    color: '#6B46C1',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontSize: '13px',
-                    fontWeight: '800',
-                    border: '1.5px solid #D6BCFA',
-                    cursor: 'pointer',
-                    boxShadow: isPlayingVoice ? '0 0 12px rgba(107, 70, 193, 0.4)' : '0 2px 8px rgba(0,0,0,0.04)',
-                    transition: 'all 0.2s ease',
-                    outline: 'none'
-                  }}
-                >
-                  {isPlayingVoice ? (
-                    <>
-                      <span style={{ fontSize: '14px', animation: 'bounce 0.5s infinite alternate' }}>🔊</span>
-                      <span>Playing Voice Note... ({currentEntry.voiceNoteDuration})</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play size={14} fill="#6B46C1" />
-                      <span>Voice Note ({currentEntry.voiceNoteDuration})</span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              {/* Photo Memory Attachment */}
-              {currentEntry.photoUrl && (
+              {/* Photo Memory Attachment with Clear Remove Button */}
+              {currentEntry?.photoUrl && (
                 <div style={{ marginTop: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <img 
                     src={currentEntry.photoUrl} 
@@ -439,16 +560,65 @@ const Journal = ({ onNavigate }) => {
                     }}
                   />
                   <div>
-                    <span style={{ fontSize: '12px', color: '#5C4E46', fontWeight: '700', display: 'block' }}>Photo Memory Attached 📸</span>
+                    <span style={{ fontSize: '12px', color: '#5C4E46', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                      Photo Memory Attached <img src={cameraImg} alt='camera' style={{width:'12px', verticalAlign:'middle'}} />
+                    </span>
                     <button 
                       onClick={() => updateCurrentEntry({ photoUrl: null })}
-                      style={{ background: 'none', border: 'none', color: '#D97979', fontSize: '11px', fontWeight: '700', cursor: 'pointer', padding: 0, marginTop: '2px' }}
+                      style={{ 
+                        background: '#FFF0F2', 
+                        border: '1px solid #FFD8E3', 
+                        color: '#D97979', 
+                        borderRadius: '12px',
+                        padding: '4px 10px',
+                        fontSize: '11px', 
+                        fontWeight: '700', 
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      Remove photo
+                      <Trash2 size={12} /> Remove photo
                     </button>
                   </div>
                 </div>
               )}
+
+              {/* SAVE JOURNAL ENTRY BUTTON */}
+              <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px dashed #FFEAE0' }}>
+                <button 
+                  onClick={saveCurrentJournalEntry}
+                  style={{
+                    width: '100%',
+                    backgroundColor: isSavedToast ? '#8DC28B' : '#D97979',
+                    color: '#FFF',
+                    padding: '12px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(217, 121, 121, 0.25)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isSavedToast ? (
+                    <>
+                      <Check size={18} /> Saved for {currentEntry?.dayName || 'Today'}! ✨
+                    </>
+                  ) : (
+                    <>
+                      💾 Save Entry for {currentEntry?.dayName || 'Today'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           ) : (
             /* Empty State */
@@ -462,12 +632,12 @@ const Journal = ({ onNavigate }) => {
               borderRadius: '20px',
               border: '1px dashed #F7EADF'
             }}>
-              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🧺🌸</div>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🐱<img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} /></div>
               <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#5C4E46', marginBottom: '4px' }}>
                 No diary yet for this day
               </h3>
               <p style={{ fontSize: '13px', color: '#9C8F87', fontWeight: '600', marginBottom: '16px' }}>
-                Start writing a small memory 🌸
+                Start writing a small memory <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} />
               </p>
               <button 
                 onClick={() => {
@@ -496,7 +666,7 @@ const Journal = ({ onNavigate }) => {
           )}
 
           <div style={{ position: 'absolute', bottom: '12px', right: '16px', opacity: 0.35, fontSize: '16px' }}>
-            🌿
+            <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} />
           </div>
         </div>
       </div>
@@ -571,7 +741,7 @@ const Journal = ({ onNavigate }) => {
                     {item.label.split(' ')[1]}
                   </span>
                   {hasEntry ? (
-                    <span style={{ fontSize: '10px', marginTop: '2px' }}>🌸</span>
+                    <span style={{ fontSize: '10px', marginTop: '2px' }}><img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} /></span>
                   ) : (
                     <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#E0D5CE', marginTop: '4px' }} />
                   )}
@@ -582,47 +752,11 @@ const Journal = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 4. Action Cards Row (3 Interactive Cards) */}
+      {/* 4. Action Cards Row (2 Interactive Cards) */}
       <div style={{ padding: '0 24px', marginBottom: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
           
-          {/* 1. Gratitude Card */}
-          <button 
-            onClick={() => {
-              setGratitudeInput(currentEntry?.gratitude || '');
-              setActiveModal('gratitude');
-            }}
-            style={{
-              backgroundColor: '#FFF',
-              borderRadius: '20px',
-              padding: '14px 10px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              border: '1px solid #F7ECE3',
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease',
-              outline: 'none'
-            }}
-          >
-            <div style={{ 
-              width: '38px', height: '38px', 
-              borderRadius: '14px', 
-              backgroundColor: '#FFE4E8', 
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '18px', marginBottom: '8px'
-            }}>
-              🪴
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '800', color: '#5C4E46', marginBottom: '2px' }}>Gratitude</span>
-            <span style={{ fontSize: '10px', color: '#9C8F87', fontWeight: '600' }}>
-              {currentEntry?.gratitude ? 'Saved 💖' : 'Thankful for?'}
-            </span>
-          </button>
-
-          {/* 2. Add Photo Card */}
+          {/* 1. Add Photo Card */}
           <button 
             onClick={() => setActiveModal('photo')}
             style={{
@@ -642,16 +776,14 @@ const Journal = ({ onNavigate }) => {
           >
             <div style={{ 
               width: '38px', height: '38px', 
-              borderRadius: '14px', 
-              backgroundColor: '#E8F3E8', 
               display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '18px', marginBottom: '8px'
+              marginBottom: '8px'
             }}>
-              📸
+              <img src={cameraImg} alt="camera" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '12px', fontWeight: '800', color: '#5C4E46', marginBottom: '2px' }}>Add Photo</span>
             <span style={{ fontSize: '10px', color: '#9C8F87', fontWeight: '600' }}>
-              {currentEntry?.photoUrl ? 'Attached 📸' : 'Capture moment'}
+              {currentEntry?.photoUrl ? <span>Attached <img src={cameraImg} style={{width:'10px', verticalAlign:'middle'}}/></span> : 'Capture moment'}
             </span>
           </button>
 
@@ -675,63 +807,24 @@ const Journal = ({ onNavigate }) => {
           >
             <div style={{ 
               width: '38px', height: '38px', 
-              borderRadius: '14px', 
-              backgroundColor: '#F0E6FF', 
               display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '18px', marginBottom: '8px'
+              marginBottom: '8px'
             }}>
-              🎙️
+              <img src={voiceImg} alt="voice" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '12px', fontWeight: '800', color: '#5C4E46', marginBottom: '2px' }}>Voice Note</span>
             <span style={{ fontSize: '10px', color: '#9C8F87', fontWeight: '600' }}>
-              {currentEntry?.voiceNoteDuration ? 'Recorded 🎙️' : 'Record thoughts'}
+              {currentEntry?.voiceNoteDuration ? <span>Recorded <img src={voiceImg} style={{width:'10px', verticalAlign:'middle'}}/></span> : 'Record thoughts'}
             </span>
           </button>
 
         </div>
       </div>
 
-      {/* 5. Weather Card (Interactive) */}
-      <div style={{ padding: '0 24px', marginBottom: '16px' }}>
-        <button 
-          onClick={() => setActiveModal('weather')}
-          style={{
-            width: '100%',
-            backgroundColor: '#FFF',
-            borderRadius: '20px',
-            padding: '16px 20px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            border: '1px solid #F7ECE3',
-            cursor: 'pointer',
-            textAlign: 'left'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
-              width: '42px', height: '42px', 
-              borderRadius: '14px', 
-              backgroundColor: '#FFF4E5', 
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '20px'
-            }}>
-              {weatherState.icon}
-            </div>
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#5C4E46', marginBottom: '2px' }}>{weatherState.title}</h4>
-              <p style={{ fontSize: '12px', color: '#9C8F87', fontWeight: '600' }}>{weatherState.desc}</p>
-            </div>
-          </div>
-          <ChevronRight size={18} color="#C4B8B2" />
-        </button>
-      </div>
 
-      {/* 6. Reminder Card (Interactive) */}
+      {/* 6. Reminder Card (Static Daily Affirmation) */}
       <div style={{ padding: '0 24px', marginBottom: '24px' }}>
-        <button 
-          onClick={() => setActiveModal('reminder')}
+        <div 
           style={{
             width: '100%',
             backgroundColor: '#FFFDF9',
@@ -742,23 +835,19 @@ const Journal = ({ onNavigate }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            cursor: 'pointer',
             textAlign: 'left'
           }}
         >
           <div>
             <span style={{ fontSize: '11px', color: '#D97979', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Today’s Reminder 🌸
+              Today’s Reminder <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} />
             </span>
             <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#5C4E46', marginTop: '4px', marginBottom: '2px' }}>
-              "{reminderState}"
+              "{dailyAffirmation}"
             </h4>
-            <p style={{ fontSize: '12px', color: '#9C8F87', fontWeight: '600' }}>
-              Tap to change affirmation
-            </p>
           </div>
           <span style={{ fontSize: '28px' }}>🪴</span>
-        </button>
+        </div>
       </div>
 
       {/* ========================================================= */}
@@ -798,7 +887,7 @@ const Journal = ({ onNavigate }) => {
             />
 
             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              {['🪴', '🌸', '☕', '☀️', '🍃', '🧸', '💖'].map(emoji => (
+              {['🪴', '🌸', '(~_~)', '(*~▽~)', '(~_~;)', '(ᵔᴥᵔ)', '(♡´౪`♡)'].map(emoji => (
                 <button 
                   key={emoji}
                   onClick={() => setGratitudeEmoji(emoji)}
@@ -825,7 +914,7 @@ const Journal = ({ onNavigate }) => {
               }}
               style={primaryBtnStyle}
             >
-              Save Gratitude 💖
+              Save Gratitude (♡´౪`♡)
             </button>
           </div>
         </div>
@@ -836,7 +925,7 @@ const Journal = ({ onNavigate }) => {
         <div style={modalOverlayStyle}>
           <div style={modalContainerStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>📸 Add Photo Memory</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}><img src={cameraImg} style={{width:'24px', verticalAlign:'middle', marginRight:'8px'}}/> Add Photo Memory</h3>
               <button onClick={() => setActiveModal(null)} style={closeBtnStyle}><X size={18} /></button>
             </div>
 
@@ -912,7 +1001,7 @@ const Journal = ({ onNavigate }) => {
         <div style={modalOverlayStyle}>
           <div style={modalContainerStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>🎙️ Record Voice Note</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}><img src={voiceImg} style={{width:'24px', verticalAlign:'middle', marginRight:'8px'}}/> Record Voice Note</h3>
               <button onClick={() => { stopRecording(); setActiveModal(null); }} style={closeBtnStyle}><X size={18} /></button>
             </div>
 
@@ -948,7 +1037,7 @@ const Journal = ({ onNavigate }) => {
             <div style={{ display: 'flex', gap: '10px' }}>
               {!isRecording ? (
                 <button onClick={startRecording} style={{ ...primaryBtnStyle, backgroundColor: '#6B46C1' }}>
-                  Start Recording 🎙️
+                  Start Recording ♪️
                 </button>
               ) : (
                 <button onClick={stopRecording} style={{ ...primaryBtnStyle, backgroundColor: '#FF6B6B' }}>
@@ -960,93 +1049,8 @@ const Journal = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* 4. WEATHER SELECTOR MODAL */}
-      {activeModal === 'weather' && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContainerStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>🌤️ Weather Today</h3>
-              <button onClick={() => setActiveModal(null)} style={closeBtnStyle}><X size={18} /></button>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-              {[
-                { icon: '🌤️', title: 'Weather Today', desc: 'Sunny with gentle breeze • 26°C' },
-                { icon: '☀️', title: 'Warm Sunshine', desc: 'Bright blue skies • 29°C' },
-                { icon: '🌧️', title: 'Cozy Rain', desc: 'Gentle raindrops & fresh air • 21°C' },
-                { icon: '🌸', title: 'Blossom Breeze', desc: 'Soft pink clouds • 23°C' }
-              ].map((w, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setWeatherState(w);
-                    setActiveModal(null);
-                  }}
-                  style={{
-                    backgroundColor: weatherState.desc === w.desc ? '#FFE4E8' : '#FFF',
-                    border: weatherState.desc === w.desc ? '2px solid #D97979' : '1px solid #F5EAE0',
-                    borderRadius: '16px',
-                    padding: '12px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>{w.icon}</span>
-                  <div>
-                    <h5 style={{ fontSize: '13px', fontWeight: '800', color: '#5C4E46' }}>{w.title}</h5>
-                    <p style={{ fontSize: '11px', color: '#9C8F87', fontWeight: '600' }}>{w.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* 5. REMINDER SELECTOR MODAL */}
-      {activeModal === 'reminder' && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContainerStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>🌸 Daily Affirmation</h3>
-              <button onClick={() => setActiveModal(null)} style={closeBtnStyle}><X size={18} /></button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-              {[
-                "You are doing better than you think.",
-                "Every small step brings beauty to your garden.",
-                "Be gentle with your heart today.",
-                "You deserve rest, peace, and happiness."
-              ].map((text, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setReminderState(text);
-                    setActiveModal(null);
-                  }}
-                  style={{
-                    backgroundColor: reminderState === text ? '#FFE4E8' : '#FFF',
-                    border: reminderState === text ? '2px solid #D97979' : '1px solid #F5EAE0',
-                    borderRadius: '16px',
-                    padding: '14px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    color: '#5C4E46',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  "{text}"
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 6. JOURNAL WRITER MODAL */}
       {activeModal === 'writer' && (
@@ -1054,7 +1058,7 @@ const Journal = ({ onNavigate }) => {
           <div style={modalContainerStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>
-                ✏️ {currentEntry ? 'Edit Journal Entry' : 'Write New Entry'}
+                ✎️ {currentEntry ? 'Edit Journal Entry' : 'Write New Entry'}
               </h3>
               <button onClick={() => setActiveModal(null)} style={closeBtnStyle}><X size={18} /></button>
             </div>
@@ -1113,7 +1117,7 @@ const Journal = ({ onNavigate }) => {
               }}
               style={primaryBtnStyle}
             >
-              Save Entry 🌸
+              Save Entry <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} />
             </button>
           </div>
         </div>
@@ -1132,7 +1136,9 @@ const Journal = ({ onNavigate }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#5C4E46' }}>My Diary Memories</h3>
-                <p style={{ fontSize: '12px', color: '#9C8F87', fontWeight: '600' }}>July 2026</p>
+                <p style={{ fontSize: '12px', color: '#9C8F87', fontWeight: '600' }}>
+                  {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </p>
               </div>
               <button onClick={() => setActiveModal(null)} style={closeBtnStyle}>
                 <X size={18} />
@@ -1142,7 +1148,7 @@ const Journal = ({ onNavigate }) => {
             {/* Month Selector */}
             <div style={{ 
               display: 'flex', 
-              justify: 'space-between', 
+              justifyContent: 'space-between', 
               alignItems: 'center', 
               backgroundColor: '#FFF', 
               padding: '12px 16px', 
@@ -1150,9 +1156,21 @@ const Journal = ({ onNavigate }) => {
               marginBottom: '16px',
               border: '1px solid #F5EAE0'
             }}>
-              <ChevronLeft size={18} color="#A09088" style={{ cursor: 'pointer' }} />
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#5C4E46' }}>July 2026</span>
-              <ChevronRight size={18} color="#A09088" style={{ cursor: 'pointer' }} />
+              <ChevronLeft 
+                size={18} 
+                color="#A09088" 
+                style={{ cursor: 'pointer' }} 
+                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} 
+              />
+              <span style={{ fontSize: '14px', fontWeight: '800', color: '#5C4E46' }}>
+                {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </span>
+              <ChevronRight 
+                size={18} 
+                color="#A09088" 
+                style={{ cursor: 'pointer' }} 
+                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} 
+              />
             </div>
 
             {/* Calendar Grid */}
@@ -1170,44 +1188,59 @@ const Journal = ({ onNavigate }) => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                {[...Array(31)].map((_, i) => {
-                  const dayNum = i + 1;
-                  const dateStr = dayNum < 10 ? `0${dayNum}` : `${dayNum}`;
-                  const fullKey = `2026-07-${dateStr}`;
-                  const hasEntry = !!entries[fullKey]?.content;
-                  const isSelected = fullKey === modalSelectedKey;
-                  const isToday = dayNum === 30;
+                {(() => {
+                  const year = calendarDate.getFullYear();
+                  const month = calendarDate.getMonth();
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const firstDay = new Date(year, month, 1).getDay();
+                  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0, Sun=6
+                  const today = new Date();
 
-                  return (
-                    <button
-                      key={dayNum}
-                      onClick={() => setModalSelectedKey(fullKey)}
-                      style={{
-                        aspectRatio: '1',
-                        borderRadius: '14px',
-                        border: isToday ? '2px solid #D97979' : 'none',
-                        backgroundColor: isSelected ? '#FFE4E8' : 'transparent',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        position: 'relative'
-                      }}
-                    >
-                      <span style={{ 
-                        fontSize: '12px', 
-                        fontWeight: isSelected || isToday ? '800' : '600',
-                        color: isSelected ? '#D97979' : '#5C4E46' 
-                      }}>
-                        {dayNum}
-                      </span>
-                      {hasEntry && (
-                        <span style={{ fontSize: '8px', position: 'absolute', bottom: '2px' }}>🌸</span>
-                      )}
-                    </button>
-                  );
-                })}
+                  const cells = [];
+                  for (let i = 0; i < startOffset; i++) {
+                    cells.push(<div key={`empty-${i}`} />);
+                  }
+
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    const monthStr = String(month + 1).padStart(2, '0');
+                    const dateStr = String(d).padStart(2, '0');
+                    const fullKey = `${year}-${monthStr}-${dateStr}`;
+                    const hasEntry = !!entries[fullKey]?.content;
+                    const isSelected = fullKey === modalSelectedKey;
+                    const isToday = year === today.getFullYear() && month === today.getMonth() && d === today.getDate();
+
+                    cells.push(
+                      <button
+                        key={`day-${d}`}
+                        onClick={() => setModalSelectedKey(fullKey)}
+                        style={{
+                          aspectRatio: '1',
+                          borderRadius: '14px',
+                          border: isToday ? '2px solid #D97979' : 'none',
+                          backgroundColor: isSelected ? '#FFE4E8' : 'transparent',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                      >
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: isSelected || isToday ? '800' : '600',
+                          color: isSelected ? '#D97979' : '#5C4E46' 
+                        }}>
+                          {d}
+                        </span>
+                        {hasEntry && (
+                          <span style={{ fontSize: '8px', position: 'absolute', bottom: '2px' }}><img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} /></span>
+                        )}
+                      </button>
+                    );
+                  }
+                  return cells;
+                })()}
               </div>
             </div>
 
@@ -1238,7 +1271,7 @@ const Journal = ({ onNavigate }) => {
                   }}
                   style={primaryBtnStyle}
                 >
-                  Open Entry 🌸
+                  Open Entry <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} />
                 </button>
               </div>
             ) : (

@@ -47,40 +47,38 @@ initDB().catch(console.error);
 // API ROUTES
 // -------------------------
 
-// GET /api/stats -> Returns user stats and total mood counts
+// GET /api/stats -> Returns user stats, todayMood, and total mood counts
 app.get('/api/stats', async (req, res) => {
   try {
     const user = await db.get('SELECT * FROM user_stats WHERE id = 1');
     
-    if (user.last_checkin) {
-      const lastCheckinDate = new Date(user.last_checkin + 'Z');
-      const now = new Date();
-      const diffTime = Math.abs(now - lastCheckinDate);
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      if (diffDays > 5) {
-        await db.run('UPDATE user_stats SET streak = 1 WHERE id = 1');
-        user.streak = 1;
-      }
-    }
+    // Check if user has checked in today
+    const existingTodayMood = await db.get(
+      "SELECT type FROM moods WHERE date(timestamp, 'localtime') = date('now', 'localtime') ORDER BY id DESC LIMIT 1"
+    );
 
-    const moodCounts = await db.all('SELECT type, COUNT(*) as count FROM moods GROUP BY type');
+    const { month, year } = req.query;
+    let moodCounts;
     
-    // Structure counts so the frontend can easily read them
-    const countMap = { happy: 0, calm: 0, sad: 0, stress: 0, loved: 0 };
-    moodCounts.forEach(m => countMap[m.type] = m.count);
-
-    // Initial mock data overrides if DB is empty, just so the tree doesn't look empty immediately
-    if (Object.values(countMap).reduce((a,b)=>a+b, 0) === 0) {
-      countMap.happy = 45;
-      countMap.calm = 32;
-      countMap.loved = 28;
-      countMap.sad = 14;
-      countMap.stress = 18;
+    if (month && year) {
+      const paddedMonth = String(month).padStart(2, '0');
+      moodCounts = await db.all(
+        "SELECT type, COUNT(*) as count FROM moods WHERE strftime('%m', timestamp) = ? AND strftime('%Y', timestamp) = ? GROUP BY type",
+        [paddedMonth, year]
+      );
+    } else {
+      moodCounts = await db.all('SELECT type, COUNT(*) as count FROM moods GROUP BY type');
     }
+    
+    const countMap = { happy: 0, calm: 0, sad: 0, stress: 0, loved: 0 };
+    moodCounts.forEach(m => {
+      if (countMap[m.type] !== undefined) countMap[m.type] = m.count;
+    });
 
     res.json({
       success: true,
       user,
+      todayMood: existingTodayMood ? existingTodayMood.type : null,
       moods: countMap
     });
   } catch (err) {
@@ -88,65 +86,75 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// POST /api/mood -> Logs a new mood, updates coins & flowers, returns updated stats
+// POST /api/mood -> Logs or updates today's mood (1 checkin per day, supports same-day mood change)
 app.post('/api/mood', async (req, res) => {
   const { type } = req.body;
   try {
-    // 1. Insert new mood
-    await db.run('INSERT INTO moods (type) VALUES (?)', [type]);
-    
-    const user = await db.get('SELECT * FROM user_stats WHERE id = 1');
-    let newStreak = user.streak;
-    
-    if (user.last_checkin) {
-      const lastCheckinDate = new Date(user.last_checkin + 'Z');
-      const now = new Date();
-      
-      const isDifferentDay = lastCheckinDate.getUTCFullYear() !== now.getUTCFullYear() || 
-                             lastCheckinDate.getUTCMonth() !== now.getUTCMonth() || 
-                             lastCheckinDate.getUTCDate() !== now.getUTCDate();
-                             
-      const diffTime = Math.abs(now - lastCheckinDate);
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      
-      if (diffDays > 5) {
-        newStreak = 1; // Restart streak
-      } else if (isDifferentDay) {
-        newStreak += 1; // Increment streak if it's a new day
-      }
+    // Check if user already checked in today
+    const existingTodayMood = await db.get(
+      "SELECT id, type FROM moods WHERE date(timestamp, 'localtime') = date('now', 'localtime') ORDER BY id DESC LIMIT 1"
+    );
+
+    let updatedTodayMood = type;
+
+    if (existingTodayMood) {
+      // 1. User ALREADY checked in today -> UPDATE today's mood (no extra coins or flowers)
+      await db.run(
+        "UPDATE moods SET type = ?, timestamp = CURRENT_TIMESTAMP WHERE id = ?",
+        [type, existingTodayMood.id]
+      );
     } else {
-      newStreak = 1; // First checkin
+      // 2. FIRST check-in of today -> INSERT new mood & update coins, flowers, streak
+      await db.run('INSERT INTO moods (type) VALUES (?)', [type]);
+
+      const user = await db.get('SELECT * FROM user_stats WHERE id = 1');
+      let newStreak = user.streak || 1;
+
+      if (user.last_checkin) {
+        const lastCheckinDate = new Date(user.last_checkin + 'Z');
+        const now = new Date();
+        const isDifferentDay = lastCheckinDate.getUTCFullYear() !== now.getUTCFullYear() || 
+                               lastCheckinDate.getUTCMonth() !== now.getUTCMonth() || 
+                               lastCheckinDate.getUTCDate() !== now.getUTCDate();
+        if (isDifferentDay) {
+          newStreak = (user.streak || 0) + 1;
+        }
+      }
+
+      await db.run(`
+        UPDATE user_stats 
+        SET coins = coins + 10, 
+            total_flowers = total_flowers + 1, 
+            last_checkin = CURRENT_TIMESTAMP,
+            streak = ?
+        WHERE id = 1
+      `, [newStreak]);
     }
 
-    // 2. Update user stats
-    await db.run(`
-      UPDATE user_stats 
-      SET coins = coins + 10, 
-          total_flowers = total_flowers + 1, 
-          last_checkin = CURRENT_TIMESTAMP,
-          streak = ?
-      WHERE id = 1
-    `, [newStreak]);
-    
-    // 3. Fetch and return the updated state
+    // Return updated state
     const updatedUser = await db.get('SELECT * FROM user_stats WHERE id = 1');
-    const moodCounts = await db.all('SELECT type, COUNT(*) as count FROM moods GROUP BY type');
-    
-    const countMap = { happy: 0, calm: 0, sad: 0, stress: 0, loved: 0 };
-    moodCounts.forEach(m => countMap[m.type] = m.count);
-    
-    // Same fallback if somehow empty (though it shouldn't be now)
-    if (Object.values(countMap).reduce((a,b)=>a+b, 0) === 0) {
-      countMap.happy = 45;
-      countMap.calm = 32;
-      countMap.loved = 28;
-      countMap.sad = 14;
-      countMap.stress = 18;
+
+    const { month, year } = req.query;
+    let moodCounts;
+    if (month && year) {
+      const paddedMonth = String(month).padStart(2, '0');
+      moodCounts = await db.all(
+        "SELECT type, COUNT(*) as count FROM moods WHERE strftime('%m', timestamp) = ? AND strftime('%Y', timestamp) = ? GROUP BY type",
+        [paddedMonth, year]
+      );
+    } else {
+      moodCounts = await db.all('SELECT type, COUNT(*) as count FROM moods GROUP BY type');
     }
+
+    const countMap = { happy: 0, calm: 0, sad: 0, stress: 0, loved: 0 };
+    moodCounts.forEach(m => {
+      if (countMap[m.type] !== undefined) countMap[m.type] = m.count;
+    });
 
     res.json({
       success: true,
       user: updatedUser,
+      todayMood: updatedTodayMood,
       moods: countMap
     });
   } catch (err) {

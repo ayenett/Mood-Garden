@@ -1,5 +1,6 @@
+import flowerImg from '../assets/flower_nobg.png';
 import React, { useState, useEffect } from 'react';
-import bgDay1 from '../assets/Day 1.png';
+import bgDay1 from '../assets/Day1.png';
 import bgDay3 from '../assets/Day3.png';
 import bgDay5 from '../assets/Day5.png';
 import bgDay8 from '../assets/Day8.png';
@@ -15,6 +16,7 @@ import imgLovely from '../assets/lovely_final_v3.png';
 import imgSad from '../assets/final_sad.png';
 import imgStress from '../assets/final_stress.png';
 import imgReflection from '../assets/a.png';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Home, Book, Map, Compass, User, Edit3, ChevronRight, Check, Smile, Sun, CloudRain, Zap, Heart, Star, Flame } from 'lucide-react';
 import { getGreeting } from '../utils/dateTime';
 
@@ -22,8 +24,10 @@ const Garden = ({ onNavigate }) => {
   const [selectedMood, setSelectedMood] = useState(null);
   const [stats, setStats] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
-  const currentStreak = stats ? stats.user.streak : 1;
+  const currentStreak = stats ? stats.user.streak : 30;
 
   const getBgImage = (streak) => {
     if (streak >= 30) return bgDay30;
@@ -56,26 +60,29 @@ const Garden = ({ onNavigate }) => {
     stress: { top: '18%', left: '79%' }
   };
 
-  // Fetch stats on load
+  // Fetch stats on load or month change
   useEffect(() => {
-    fetch('http://localhost:4000/api/stats')
+    fetch(`http://localhost:4000/api/stats?month=${selectedMonth}&year=${selectedYear}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           setStats(data);
+          if (data.todayMood) {
+            setSelectedMood(data.todayMood);
+          }
         }
       })
       .catch(err => console.error("Failed to load stats:", err));
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
-  // Submit mood to backend
+  // Submit or change today's mood on backend (1 check-in per day logic)
   const handleMoodSelect = async (moodId) => {
     if (isUpdating) return;
     setIsUpdating(true);
     setSelectedMood(moodId);
     
     try {
-      const res = await fetch('http://localhost:4000/api/mood', {
+      const res = await fetch(`http://localhost:4000/api/mood?month=${selectedMonth}&year=${selectedYear}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: moodId })
@@ -83,13 +90,14 @@ const Garden = ({ onNavigate }) => {
       const data = await res.json();
       if (data.success) {
         setStats(data);
+        if (data.todayMood) {
+          setSelectedMood(data.todayMood);
+        }
       }
     } catch (err) {
       console.error("Failed to save mood:", err);
     } finally {
       setIsUpdating(false);
-      // Optional: reset selected mood after a delay
-      setTimeout(() => setSelectedMood(null), 2000);
     }
   };
 
@@ -170,7 +178,7 @@ const Garden = ({ onNavigate }) => {
             alignItems: 'center',
             gap: '6px'
           }}>
-            🌸 {stats ? stats.user.streak : '...'}
+            <img src={flowerImg} alt='flower' style={{ width: '1.2em', height: '1.2em', verticalAlign: '-0.2em', display: 'inline-block' }} /> {stats ? stats.user.streak : '...'}
           </div>
         </div>
 
@@ -329,14 +337,17 @@ const Garden = ({ onNavigate }) => {
         </div>
 
         {/* Your Journey Card (Linked to Database) */}
-        <div style={{ 
+        <div 
+          onClick={() => onNavigate && onNavigate('Journey')}
+          style={{ 
           backgroundColor: '#FFF',
           borderRadius: '24px',
           padding: '24px',
           boxShadow: '0 8px 24px rgba(0,0,0,0.03)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          cursor: 'pointer'
         }}>
           <div>
             <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#5C4E46', marginBottom: '4px' }}>Your Journey</h3>
