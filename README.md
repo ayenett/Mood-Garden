@@ -1,43 +1,43 @@
-# 🌸 Mood Garden - แอปบันทึกและติดตามอารมณ์ (Mood Tracker & Journal)
+# 🌸 Mood Garden - Cozy Mood Tracker & Journal Web App
 
-**Mood Garden** เป็นเว็บแอปพลิเคชันสไตล์มินิมอลอบอุ่น (Warm & Cozy Pastel Aesthetics) ที่ช่วยให้คุณติดตามสภาพอารมณ์ บันทึกไดอารี่ประจำวัน เสียง ภาพถ่ายความทรงจำ และเฝ้ามองต้นไม้อารมณ์เติบโตขึ้นในทุกๆ วัน 🌿✨
-
----
-
-## 🌟 ฟีเจอร์หลัก (Key Features)
-
-### 1. 🏡 หน้าสวนอารมณ์ (Garden Dashboard)
-- **ต้นไม้อารมณ์ (Interactive Mood Fruit Tree):** แสดงผลลัพธ์อารมณ์แต่ละประเภทเป็นผลไม้หลากสีสันบนต้นไม้ (Happy 🍊, Calm 🫐, Sad 🍑, Stressed 🍋, Lovely 🍎)
-- **เช็คอินอารมณ์ประจำวัน (Daily Mood Check-in):** เลือกอารมณ์ของคุณได้ง่ายๆ ในแต่ละวัน
-- **กราฟสรุปสถิติ (Real-time Analytics):** กราฟวงกลม (Pie Chart) แสดงสัดส่วนอารมณ์พร้อมตัวนับสถิติต่อเนื่อง (Days Streak Tracker)
-
-### 2. 📖 สมุดบันทึกความทรงจำ (Daily Journal)
-- **แถบเลือกวันที่ย้อนหลัง (7-Day Carousel):** สลับดูและบันทึกอารมณ์ย้อนหลังได้ 7 วันอย่างสะดวกรวดเร็ว
-- **บันทึกเสียง (Voice Note):** กดอัดเสียงพูดเพื่อบันทึกความรู้สึก พร้อมปุ่มฟังและลบไฟล์เสียง
-- **แนบรูปภาพ (Photo Memory):** อัปโหลดรูปภาพความทรงจำประจำวัน พร้อมปุ่มลบและดูรูปภาพขยายใหญ่
-- **ระบบบันทึกถาวร (Persistent Saving):** กดปุ่ม **`💾 Save Entry`** เพื่อบันทึกข้อความ เสียง และรูปภาพลงในระบบความจำถาวร (`localStorage`) ไม่สูญหายเมื่อรีเฟรชหน้าเว็บ
-
-### 3. 🎁 สรุปภาพรวมและกล่องสมบัติ (Summary & Memory Treasure Box)
-- **กล่องสมบัติความทรงจำ (Treasure Box):** รวบรวมรูปภาพและไดอารี่ในรูปแบบการ์ดโพลารอยด์นุ่มนวล (Feathered Vignette Masking)
-- **ดูรูปภาพทั้งหมด (View All Memories):** ขยายดูภาพถ่ายความทรงจำทั้งหมดแบบเต็มตาและเลื่อนดูได้ครบทุกใบ
-
-### 4. 🎵 ระบบเสียงและเอฟเฟกต์ (Background Music & Sound System)
-- **เพลงพื้นหลังคลอเบาๆ (Gentle Lullaby & Dream):** เล่นเพลงบรรยากาศผ่อนคลายนุ่มนวลต่อเนื่องตั้งแต่หน้า Welcome / Login ไปจนถึงทุกหน้าในแอป
-- **เสียงเอฟเฟกต์กดปุ่ม (Balloon Burst Sound Effect):** เสียงป๊อปสดใสเบาๆ ในทุกการคลิกปุ่มภายในแอป
-- **สวิตช์เปิด/ปิดเสียงในหน้าตั้งค่า (Sound Toggles):** สามารถกดเลือกเปิด/ปิดเสียงเพลงพื้นหลัง และเสียงกดปุ่มแยกกันได้อิสระในหน้า **My Profile**
+**Mood Garden** is a warm, aesthetic pastel Mood Tracker & Daily Journal web application. It empowers users to reflect on their emotions, keep daily voice notes and photo memories, and nurture their interactive mood fruit tree every day. 🌿✨
 
 ---
 
-## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+## 🌟 Key Features
 
-- **Frontend:** React, Vite, CSS (Pastel Custom UI Design System)
-- **Icons & Visualization:** Lucide React, Recharts
-- **Audio:** HTML5 Web Audio API
-- **Backend / Database:** Node.js, Express, SQLite (`database.sqlite`)
+### 1. 🏡 Garden Dashboard
+- **Interactive Mood Fruit Tree:** Visualizes emotions as vibrant fruits growing on your tree (Happy 🍊, Calm 🫐, Sad 🍑, Stressed 🍋, Lovely 🍎).
+- **Daily Mood Check-in:** Log your mood effortlessly each day.
+- **Real-time Analytics:** Interactive Pie Chart distribution with continuous Days Streak Tracker.
+
+### 2. 📖 Daily Journal & Memory Keepers
+- **7-Day Past Carousel:** Easily navigate and log mood entries for the past 7 days.
+- **Voice Note Recording:** Record, play back, and manage daily voice reflections.
+- **Photo Memories:** Attach cherished photos with instant preview and delete controls.
+- **Persistent Data Saving:** Save entries persistently via `localStorage` by clicking **`💾 Save Entry`**.
+
+### 3. 🎁 Summary & Memory Treasure Box
+- **Memory Treasure Box:** A cozy polaroid gallery with soft feathered vignette borders.
+- **View All Memories Modal:** View and scroll through all your photo memories in full size.
+
+### 4. 🎵 Background Music & Sound Effects
+- **Gentle Lullaby Background Music:** Plays soft, relaxing ambient lullaby music continuously across the entire app starting from the Welcome/Login screen.
+- **Balloon Burst Button Sound Effects:** Instant subtle pop sound effect on every button click.
+- **Customizable Sound Controls:** Independent toggle switches in **My Profile** for background music and button sound effects.
 
 ---
 
-## 💻 วิธีการติดตั้งและรันโปรเจกต์ (Installation & Setup)
+## 🛠️ Tech Stack
+
+- **Frontend:** React, Vite, Custom Pastel Design System (CSS)
+- **Icons & Analytics:** Lucide React, Recharts
+- **Audio System:** Web Audio API
+- **Backend & Persistence:** Node.js, Express, SQLite (`database.sqlite`)
+
+---
+
+## 💻 Getting Started (Installation & Setup)
 
 ### 1. Clone Repository
 ```bash
@@ -45,18 +45,18 @@ git clone https://github.com/ayenett/Mood-Garden.git
 cd Mood-Garden
 ```
 
-### 2. ติดตั้ง Dependencies
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. เริ่มต้นรันโปรเจกต์ (Development Server)
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
-เปิดบราวเซอร์ไปที่ `http://localhost:5175` (หรือ URL ที่ปรากฏบน Terminal) เพื่อเริ่มใช้งานแอปพลิเคชัน 🌸
+Open your browser and visit `http://localhost:5175` to start exploring **Mood Garden**! 🌸
 
 ---
 
-## 👤 บัญชีผู้พัฒนา (Author)
+## 👤 Author
 - **GitHub:** [@ayenett](https://github.com/ayenett)
