@@ -18,6 +18,7 @@ import imgGardenReflect from '../assets/a.png';
 import imgMemory50 from '../assets/Designer (50).png';
 import imgMemory51 from '../assets/Designer (51).png';
 import imgWelcome from '../assets/Welcome.png';
+import { fetchUserStats } from '../utils/api';
 import { getGreeting } from '../utils/dateTime';
 
 const monthNames = [
@@ -139,8 +140,7 @@ const Summary = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch(`http://localhost:4000/api/stats?month=${selectedMonth}&year=${selectedYear}`)
-      .then(res => res.json())
+    fetchUserStats(selectedMonth, selectedYear)
       .then(data => {
         if (data.success && data.moods) {
           setMoodData(data.moods);

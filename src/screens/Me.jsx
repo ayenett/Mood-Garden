@@ -8,6 +8,7 @@ import profileImg from '../assets/profile1.jpg';
 import flowerImg from '../assets/flower_nobg.png';
 
 import { setClickSoundEnabled, getClickSoundEnabled } from '../utils/sound';
+import { fetchUserStats } from '../utils/api';
 
 const Me = ({ onNavigate, onLogout, isMuted = false, onToggleMusic }) => {
   const [stats, setStats] = useState(null);
@@ -28,8 +29,7 @@ const Me = ({ onNavigate, onLogout, isMuted = false, onToggleMusic }) => {
   };
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/stats')
-      .then((res) => res.json())
+    fetchUserStats()
       .then((data) => {
         if (data.success && data.user) {
           setStats(data.user);

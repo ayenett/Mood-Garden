@@ -8,6 +8,8 @@ import Me from './screens/Me';
 import GlobalBottomNav from './components/GlobalBottomNav';
 import bgLullabyAudio from './assets/alex-morgan-gentle-baby-sleep-lullaby-dream-530944.mp3';
 import { playClickSound } from './utils/sound';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 import './index.css';
 
 class ErrorBoundary extends Component {
@@ -68,6 +70,20 @@ function App() {
   const [activeTab, setActiveTab] = useState('Garden');
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Configure Capacitor native plugins if running natively
+    const initCapacitorPlugins = async () => {
+      try {
+        await StatusBar.setStyle({ style: Style.Light });
+        await StatusBar.setBackgroundColor({ color: '#FFF8EE' });
+      } catch (e) {}
+      try {
+        await SplashScreen.hide();
+      } catch (e) {}
+    };
+    initCapacitorPlugins();
+  }, []);
 
   useEffect(() => {
     // Initialize background lullaby audio
@@ -142,7 +158,7 @@ function App() {
         <Onboarding onComplete={() => setHasOnboarded(true)} />
       ) : (
         <ErrorBoundary>
-          <div style={{ flex: 1, width: '100%', overflowY: 'auto', position: 'relative' }}>
+          <div style={{ flex: 1, width: '100%', overflowY: 'auto', position: 'relative', paddingBottom: 'calc(68px + env(safe-area-inset-bottom, 0px))' }}>
             {activeTab === 'Journal' ? (
               <Journal onNavigate={setActiveTab} />
             ) : activeTab === 'Summary' ? (

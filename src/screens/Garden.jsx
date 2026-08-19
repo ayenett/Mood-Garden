@@ -19,6 +19,8 @@ import imgReflection from '../assets/a.png';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Home, Book, Map, Compass, User, Edit3, ChevronRight, Check, Smile, Sun, CloudRain, Zap, Heart, Star, Flame } from 'lucide-react';
 import { getGreeting } from '../utils/dateTime';
+import { fetchUserStats, submitMoodCheckin } from '../utils/api';
+import { triggerMediumHaptic, triggerSuccessHaptic } from '../utils/haptics';
 
 const Garden = ({ onNavigate }) => {
   const [selectedMood, setSelectedMood] = useState(null);
@@ -29,7 +31,7 @@ const Garden = ({ onNavigate }) => {
   
   const currentStreak = stats ? stats.user.streak : 30;
 
-  const getBgImage = (streak) => {
+  const getTreeImageForStreak = (streak) => {
     if (streak >= 30) return bgDay30;
     if (streak >= 25) return bgDay25;
     if (streak >= 20) return bgDay20;
@@ -42,11 +44,11 @@ const Garden = ({ onNavigate }) => {
     return bgDay1;
   };
 
-  const isTreeStage = currentStreak >= 10;
-  const bgImage = getBgImage(currentStreak);
+  const currentTreeBg = getTreeImageForStreak(currentStreak);
+  const isHighGrowthStage = currentStreak >= 10;
 
   // Dynamic badge positions for early growth vs Tree stage
-  const positions = isTreeStage ? {
+  const positions = isHighGrowthStage ? {
     happy: { top: '14%', left: '28%' },
     calm: { top: '28%', left: '10%' },
     loved: { top: '27%', left: '75%' },
@@ -62,8 +64,7 @@ const Garden = ({ onNavigate }) => {
 
   // Fetch stats on load or month change
   useEffect(() => {
-    fetch(`http://localhost:4000/api/stats?month=${selectedMonth}&year=${selectedYear}`)
-      .then(res => res.json())
+    fetchUserStats(selectedMonth, selectedYear)
       .then(data => {
         if (data.success) {
           setStats(data);
@@ -80,19 +81,16 @@ const Garden = ({ onNavigate }) => {
     if (isUpdating) return;
     setIsUpdating(true);
     setSelectedMood(moodId);
+    triggerMediumHaptic();
     
     try {
-      const res = await fetch(`http://localhost:4000/api/mood?month=${selectedMonth}&year=${selectedYear}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: moodId })
-      });
-      const data = await res.json();
+      const data = await submitMoodCheckin(moodId, selectedMonth, selectedYear);
       if (data.success) {
         setStats(data);
         if (data.todayMood) {
           setSelectedMood(data.todayMood);
         }
+        triggerSuccessHaptic();
       }
     } catch (err) {
       console.error("Failed to save mood:", err);
@@ -148,7 +146,7 @@ const Garden = ({ onNavigate }) => {
         position: 'relative',
         height: '85vh',
         minHeight: '650px',
-        backgroundImage: `url("${bgImage}")`,
+        backgroundImage: `url("${currentTreeBg}")`,
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center top',
         backgroundSize: 'contain',

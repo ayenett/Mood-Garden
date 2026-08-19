@@ -1,0 +1,17 @@
+{
+  "name": "Mood Garden",
+  "short_name": "Mood Garden",
+  "description": "A calming emotional wellness and mood tracking garden.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8EE",
+  "theme_color": "#FFF8EE",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
