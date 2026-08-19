@@ -353,7 +353,7 @@ const Journal = ({ onNavigate }) => {
 
       {/* 1. Header & Hero Section */}
       <div style={{
-        padding: '24px 24px 16px',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 24px 16px',
         position: 'relative',
         display: 'flex',
         justify: 'space-between',

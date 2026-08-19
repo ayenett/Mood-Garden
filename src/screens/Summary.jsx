@@ -192,8 +192,7 @@ const Summary = () => {
     <div style={{
       minHeight: '100vh',
       backgroundColor: '#FFF8F1', // Cream paper background
-      padding: '24px',
-      paddingBottom: '120px', // Space for bottom nav
+      padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 24px 120px 24px',
       overflowY: 'auto',
       overflowX: 'hidden',
       position: 'relative'

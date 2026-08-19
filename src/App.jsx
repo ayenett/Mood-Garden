@@ -75,8 +75,8 @@ function App() {
     // Configure Capacitor native plugins if running natively
     const initCapacitorPlugins = async () => {
       try {
-        await StatusBar.setStyle({ style: Style.Light });
-        await StatusBar.setBackgroundColor({ color: '#FFF8EE' });
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.setStyle({ style: Style.Dark });
       } catch (e) {}
       try {
         await SplashScreen.hide();

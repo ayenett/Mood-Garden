@@ -103,7 +103,6 @@ html, body {
     border-radius: 0;
     border: none;
     box-shadow: none;
-    padding-top: var(--safe-area-top);
   }
 }
 

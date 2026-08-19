@@ -155,7 +155,7 @@ const Garden = ({ onNavigate }) => {
       }}>
         
         {/* Top Header */}
-        <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
+        <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 24px 16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
           <div>
             <div style={{ fontSize: '15px', color: '#7A6B63', fontWeight: '600' }}>{getGreeting()}</div>
             <div style={{ fontSize: '28px', color: '#D97979', fontFamily: 'DM Serif Display, serif', display: 'flex', alignItems: 'center', gap: '8px' }}>

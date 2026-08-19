@@ -152,7 +152,7 @@ const Journey = () => {
         top: 0,
         left: 0,
         width: '100%',
-        padding: 'max(env(safe-area-inset-top, 24px), 24px) 24px 32px',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 24px 20px',
         background: 'linear-gradient(to bottom, #FDF3E7 40%, rgba(253, 243, 231, 0.9) 70%, rgba(253, 243, 231, 0) 100%)',
         zIndex: 100,
         display: 'flex',
